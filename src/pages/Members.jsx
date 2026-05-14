@@ -42,7 +42,7 @@ function FilterChip({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+      className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
         active
           ? 'bg-brand-yellow text-black'
           : 'bg-elevated text-muted hover:text-content'
@@ -107,15 +107,16 @@ export default function Members() {
       >
         <button
           onClick={() => setFormState({ mode: 'add' })}
-          className="flex items-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90"
+          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-brand-yellow px-3 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90 sm:px-4"
         >
           <Plus size={16} strokeWidth={2.6} />
-          Nouveau membre
+          <span className="sm:hidden">Nouveau</span>
+          <span className="hidden sm:inline">Nouveau membre</span>
         </button>
       </PageHeader>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           icon={Users}
           label="Total membres"
@@ -152,8 +153,8 @@ export default function Members() {
       </div>
 
       {/* Barre d'outils */}
-      <Card className="mt-6 p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <Card className="mt-6 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
           <div className="relative w-full lg:max-w-xs">
             <Search
               size={16}
@@ -168,8 +169,8 @@ export default function Members() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+          <div className="-mx-3 flex items-center gap-2 overflow-x-auto px-3 pb-0.5 lg:mx-0 lg:flex-wrap lg:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">
               Formule
             </span>
             <FilterChip
@@ -190,8 +191,8 @@ export default function Members() {
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-hairline pt-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <div className="-mx-3 mt-3 flex items-center gap-2 overflow-x-auto border-t border-hairline px-3 pb-0.5 pt-3 sm:mx-0 sm:flex-wrap sm:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">
             Statut
           </span>
           <FilterChip
@@ -270,29 +271,37 @@ export default function Members() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.025, 0.4) }}
-                className="group grid w-full cursor-pointer grid-cols-1 items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-elevated/60 focus:outline-none focus-visible:bg-elevated/60 lg:grid-cols-[2.2fr_1fr_1fr_0.8fr_1.4fr_1fr_auto]"
+                className="group block w-full cursor-pointer p-4 text-left transition-colors hover:bg-elevated/60 focus:outline-none focus-visible:bg-elevated/60 lg:grid lg:grid-cols-[2.2fr_1fr_1fr_0.8fr_1.4fr_1fr_auto] lg:items-center lg:gap-4 lg:px-5 lg:py-4"
               >
                 {/* Membre */}
                 <div className="flex items-center gap-3">
                   <Avatar src={m.avatar} name={m.name} size="md" accent="yellow" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-content">{m.name}</p>
                     <p className="truncate text-xs text-muted">{m.email}</p>
                   </div>
+                  {/* Chevron — mobile : indique le tap */}
+                  <ChevronRight
+                    size={18}
+                    className="shrink-0 text-muted lg:hidden"
+                  />
                 </div>
 
-                {/* Formule */}
-                <div>
-                  <Badge variant="purple">{m.plan}</Badge>
-                </div>
+                {/* Badges — mobile : ligne dédiée sous l'identité */}
+                <div className="mt-3 flex flex-wrap items-center gap-2 lg:mt-0 lg:contents">
+                  {/* Formule */}
+                  <div>
+                    <Badge variant="purple">{m.plan}</Badge>
+                  </div>
 
-                {/* Statut */}
-                <div>
-                  <Badge variant={STATUS_VARIANT[m.status]}>{m.status}</Badge>
+                  {/* Statut */}
+                  <div>
+                    <Badge variant={STATUS_VARIANT[m.status]}>{m.status}</Badge>
+                  </div>
                 </div>
 
                 {/* Visites */}
-                <div className="text-sm font-bold text-content">
+                <div className="mt-3 text-sm font-bold text-content lg:mt-0">
                   {m.visits}
                   <span className="ml-1 text-xs font-normal text-muted lg:hidden">
                     visites
@@ -300,45 +309,51 @@ export default function Members() {
                 </div>
 
                 {/* Progression */}
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-full max-w-[120px] overflow-hidden rounded-full bg-elevated">
+                <div className="mt-2 flex items-center gap-2 lg:mt-0">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-elevated lg:max-w-[120px]">
                     <div
                       className={`h-full rounded-full ${progressColor(m.progress)}`}
                       style={{ width: `${m.progress}%` }}
                     />
                   </div>
-                  <span className="w-8 text-xs font-semibold text-muted">
+                  <span className="w-8 shrink-0 text-right text-xs font-semibold text-muted lg:text-left">
                     {m.progress}%
                   </span>
                 </div>
 
-                {/* Dernière visite */}
-                <div className="text-xs text-muted">{fmtDate(m.lastVisit)}</div>
+                {/* Dernière visite + actions — mobile : ligne commune */}
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline pt-3 lg:mt-0 lg:contents lg:border-0 lg:pt-0">
+                  {/* Dernière visite */}
+                  <div className="text-xs text-muted">
+                    <span className="lg:hidden">Dernière visite : </span>
+                    {fmtDate(m.lastVisit)}
+                  </div>
 
-                {/* Actions + chevron */}
-                <div className="flex items-center justify-end gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setFormState({ mode: 'edit', member: m })
-                    }}
-                    aria-label={`Modifier ${m.name}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-card hover:text-content lg:opacity-0 lg:group-hover:opacity-100"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setConfirmTarget(m)
-                    }}
-                    aria-label={`Supprimer ${m.name}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-red-500/15 hover:text-red-500 lg:opacity-0 lg:group-hover:opacity-100"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                  <div className="hidden text-muted lg:flex">
-                    <ChevronRight size={16} />
+                  {/* Actions + chevron */}
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setFormState({ mode: 'edit', member: m })
+                      }}
+                      aria-label={`Modifier ${m.name}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:bg-card hover:text-content lg:h-8 lg:w-8 lg:bg-transparent lg:opacity-0 lg:group-hover:opacity-100"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConfirmTarget(m)
+                      }}
+                      aria-label={`Supprimer ${m.name}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:bg-red-500/15 hover:text-red-500 lg:h-8 lg:w-8 lg:bg-transparent lg:opacity-0 lg:group-hover:opacity-100"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                    <div className="hidden text-muted lg:flex">
+                      <ChevronRight size={16} />
+                    </div>
                   </div>
                 </div>
               </motion.div>

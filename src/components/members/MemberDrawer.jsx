@@ -92,14 +92,14 @@ export default function MemberDrawer({ member, onClose, onEdit, onDelete }) {
             onClick={onClose}
           />
           <motion.aside
-            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-hairline bg-surface shadow-soft"
+            className="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-y-auto border-l border-hairline bg-surface shadow-soft sm:max-w-md"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 280 }}
           >
             {/* En-tête */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-hairline bg-surface/95 px-6 py-4 backdrop-blur">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-hairline bg-surface/95 px-5 py-4 backdrop-blur sm:px-6">
               <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
                 Fiche membre
               </h2>
@@ -112,15 +112,16 @@ export default function MemberDrawer({ member, onClose, onEdit, onDelete }) {
               </button>
             </div>
 
-            <div className="flex flex-col gap-6 px-6 py-6">
+            <div className="flex flex-col gap-6 px-5 py-6 sm:px-6">
               {/* Identité */}
               <div className="flex flex-col items-center text-center">
                 <Avatar src={member.avatar} name={member.name} size="xl" accent="yellow" />
                 <h3 className="mt-3 text-xl font-extrabold tracking-tight text-content">
                   {member.name}
                 </h3>
-                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted">
-                  <Mail size={13} /> {member.email}
+                <p className="mt-0.5 flex max-w-full items-center gap-1.5 text-sm text-muted">
+                  <Mail size={13} className="shrink-0" />
+                  <span className="truncate">{member.email}</span>
                 </p>
                 <div className="mt-3 flex items-center gap-2">
                   <Badge variant={STATUS_VARIANT[member.status]}>{member.status}</Badge>
@@ -143,10 +144,10 @@ export default function MemberDrawer({ member, onClose, onEdit, onDelete }) {
                   <p className="text-xs font-medium text-muted">Visites totales</p>
                 </div>
                 <div className="rounded-xl border border-hairline bg-card p-4">
-                  <p className="text-2xl font-extrabold text-content">
+                  <p className="text-lg font-extrabold leading-tight text-content sm:text-xl">
                     {fmtDate(member.lastVisit)}
                   </p>
-                  <p className="text-xs font-medium text-muted">Dernière visite</p>
+                  <p className="mt-0.5 text-xs font-medium text-muted">Dernière visite</p>
                 </div>
               </div>
 

@@ -91,10 +91,12 @@ function Stars({ rating, size = 14 }) {
 /* ---- Petite puce de statistique ---- */
 function StatChip({ icon: Icon, value, label }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 rounded-xl bg-elevated px-2 py-2 text-center">
-      <Icon size={15} className="text-muted" strokeWidth={2.2} />
-      <span className="text-sm font-bold text-content">{value}</span>
-      <span className="text-[10px] font-medium uppercase tracking-wide text-muted">{label}</span>
+    <div className="flex min-w-0 flex-col items-center gap-0.5 rounded-xl bg-elevated px-1.5 py-2 text-center sm:px-2">
+      <Icon size={15} className="shrink-0 text-muted" strokeWidth={2.2} />
+      <span className="w-full truncate text-sm font-bold text-content">{value}</span>
+      <span className="w-full truncate text-[10px] font-medium uppercase tracking-wide text-muted">
+        {label}
+      </span>
     </div>
   )
 }
@@ -112,7 +114,7 @@ function CoachCard({ coach, onOpen, onEdit, onDelete }) {
       <div className={`absolute inset-0 bg-gradient-to-br ${a.gradient} opacity-0 transition-opacity group-hover:opacity-100`} />
 
       {/* Actions rapides — édition / suppression */}
-      <div className="absolute right-3 top-3 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="absolute right-3 top-3 z-10 flex gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
         <span
           role="button"
           tabIndex={0}
@@ -128,9 +130,10 @@ function CoachCard({ coach, onOpen, onEdit, onDelete }) {
               onEdit(coach)
             }
           }}
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:text-content"
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:text-content sm:h-7 sm:w-7"
         >
-          <Pencil size={13} />
+          <Pencil size={15} className="sm:hidden" />
+          <Pencil size={13} className="hidden sm:block" />
         </span>
         <span
           role="button"
@@ -147,31 +150,32 @@ function CoachCard({ coach, onOpen, onEdit, onDelete }) {
               onDelete(coach)
             }
           }}
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:text-red-500"
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:text-red-500 sm:h-7 sm:w-7"
         >
-          <Trash2 size={13} />
+          <Trash2 size={15} className="sm:hidden" />
+          <Trash2 size={13} className="hidden sm:block" />
         </span>
       </div>
 
-      <div className="relative p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Avatar src={coach.avatar} name={coach.fullName} size="lg" accent={coach.accent} />
-            <div>
-              <h3 className="font-bold leading-tight text-content">{coach.fullName}</h3>
-              <p className="text-xs text-muted">{coach.title}</p>
+      <div className="relative p-4 sm:p-5">
+        <div className="flex items-start gap-3 pr-20 sm:pr-16">
+          <Avatar src={coach.avatar} name={coach.fullName} size="lg" accent={coach.accent} />
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-bold leading-tight text-content">{coach.fullName}</h3>
+            <p className="truncate text-xs text-muted">{coach.title}</p>
+            <div className="mt-1.5">
+              <Badge variant={STATUS_VARIANT[coach.status] || 'neutral'}>{coach.status}</Badge>
             </div>
           </div>
-          <Badge variant={STATUS_VARIANT[coach.status] || 'neutral'}>{coach.status}</Badge>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1">
           <Stars rating={coach.rating} />
           <span className="text-sm font-bold text-content">{coach.rating.toFixed(1)}</span>
           <span className="text-xs text-muted">· {coach.reviews} avis</span>
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-2">
+        <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
           <StatChip icon={Users} value={coach.members} label="Membres" />
           <StatChip icon={Heart} value={coach.followers} label="Abonnés" />
           <StatChip icon={Award} value={`${coach.years}a`} label="Exp." />
@@ -220,7 +224,7 @@ function CoachDrawer({ coach, classes, onClose, onEdit, onDelete }) {
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
       >
         {/* En-tête teinté accent */}
-        <div className={`relative bg-gradient-to-b ${a.gradient} p-6`}>
+        <div className={`relative bg-gradient-to-b ${a.gradient} p-5 pr-14 sm:p-6 sm:pr-6`}>
           <button
             onClick={onClose}
             className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-muted transition-colors hover:text-content"
@@ -230,13 +234,13 @@ function CoachDrawer({ coach, classes, onClose, onEdit, onDelete }) {
           </button>
           <div className="flex items-center gap-4">
             <Avatar src={coach.avatar} name={coach.fullName} size="xl" accent={coach.accent} />
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-extrabold text-content">{coach.fullName}</h2>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h2 className="text-lg font-extrabold text-content sm:text-xl">{coach.fullName}</h2>
                 <Badge variant={STATUS_VARIANT[coach.status] || 'neutral'}>{coach.status}</Badge>
               </div>
               <p className="text-sm text-muted">{coach.title}</p>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <Stars rating={coach.rating} />
                 <span className="text-sm font-bold text-content">{coach.rating.toFixed(1)}</span>
                 <span className="text-xs text-muted">({coach.reviews})</span>
@@ -245,7 +249,7 @@ function CoachDrawer({ coach, classes, onClose, onEdit, onDelete }) {
           </div>
         </div>
 
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-5 sm:p-6">
           {/* Bio */}
           <section>
             <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Biographie</h3>
@@ -253,7 +257,7 @@ function CoachDrawer({ coach, classes, onClose, onEdit, onDelete }) {
           </section>
 
           {/* Stats numériques */}
-          <section className="grid grid-cols-3 gap-2">
+          <section className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <StatChip icon={Users} value={coach.members} label="Membres" />
             <StatChip icon={Heart} value={coach.followers} label="Abonnés" />
             <StatChip icon={Award} value={`${coach.years} ans`} label="Expérience" />
@@ -437,41 +441,43 @@ export default function Coaches() {
         title="Coachs"
         subtitle={`${coaches.length} coachs • performance et affectations`}
       >
-        <div className="flex items-center gap-1 rounded-xl bg-elevated p-1">
-          {SORTS.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => setSort(s.key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                sort === s.key
-                  ? 'bg-brand-yellow text-black'
-                  : 'text-muted hover:text-content'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <div className="flex w-full items-center gap-1 rounded-xl bg-elevated p-1 sm:w-auto">
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setSort(s.key)}
+                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:flex-none sm:py-1.5 ${
+                  sort === s.key
+                    ? 'bg-brand-yellow text-black'
+                    : 'text-muted hover:text-content'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={openAdd}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2.5 text-sm font-bold text-black transition-transform hover:scale-[1.03] sm:w-auto sm:py-2"
+          >
+            <Plus size={16} strokeWidth={2.6} />
+            Nouveau coach
+          </button>
         </div>
-        <button
-          onClick={openAdd}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-bold text-black transition-transform hover:scale-[1.03]"
-        >
-          <Plus size={16} strokeWidth={2.6} />
-          Nouveau coach
-        </button>
       </PageHeader>
 
       {/* Ligne de KPI */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {metricCards.map((m) => {
           const a = ACCENT[m.accent]
           return (
-            <Card key={m.label} className="p-5 transition-shadow hover:shadow-soft">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${a.softBg} ${a.text}`}>
+            <Card key={m.label} className="p-4 transition-shadow hover:shadow-soft sm:p-5">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${a.softBg} ${a.text}`}>
                 <m.icon size={20} strokeWidth={2.2} />
               </div>
-              <p className="mt-4 text-sm font-medium text-muted">{m.label}</p>
-              <p className="mt-1 text-3xl font-extrabold tracking-tight text-content">{m.value}</p>
+              <p className="mt-3 text-xs font-medium text-muted sm:mt-4 sm:text-sm">{m.label}</p>
+              <p className="mt-1 text-2xl font-extrabold tracking-tight text-content sm:text-3xl">{m.value}</p>
             </Card>
           )
         })}
@@ -481,10 +487,10 @@ export default function Coaches() {
       {featured && (
       <Card className={`relative mt-6 overflow-hidden ${fa.border}`}>
         <div className={`absolute inset-0 bg-gradient-to-br ${fa.gradient}`} />
-        <div className="relative flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
-          <div className="flex items-center gap-5">
+        <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-8">
+          <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:gap-5 sm:text-left">
             <Avatar src={featured.avatar} name={featured.fullName} size="xl" accent={featured.accent} />
-            <div>
+            <div className="min-w-0">
               <div className={`mb-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${fa.softBg} ${fa.text}`}>
                 <Sparkles size={12} />
                 Coach du moment
@@ -493,7 +499,7 @@ export default function Coaches() {
                 {featured.fullName}
               </h2>
               <p className="text-sm text-muted">{featured.title}</p>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex items-center justify-center gap-2 sm:justify-start">
                 <Stars rating={featured.rating} size={16} />
                 <span className="text-sm font-bold text-content">
                   {featured.rating.toFixed(1)}
@@ -503,8 +509,8 @@ export default function Coaches() {
             </div>
           </div>
 
-          <div className="flex-1 sm:border-l sm:border-hairline sm:pl-8">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex-1 border-t border-hairline pt-5 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
               <StatChip icon={Users} value={featured.members} label="Membres" />
               <StatChip icon={Heart} value={featured.followers} label="Abonnés" />
               <StatChip icon={Award} value={`${featured.years} ans`} label="Exp." />
@@ -522,7 +528,7 @@ export default function Coaches() {
             </div>
             <button
               onClick={() => setSelected(featured)}
-              className="mt-4 inline-flex items-center gap-1 rounded-xl bg-brand-yellow px-4 py-2 text-xs font-bold text-black transition-transform hover:scale-[1.03]"
+              className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-brand-yellow px-4 py-2.5 text-xs font-bold text-black transition-transform hover:scale-[1.03] sm:w-auto sm:py-2"
             >
               Voir le profil complet
               <ChevronRight size={14} />

@@ -1,5 +1,5 @@
 // Page "Cours & Planning" — planning hebdomadaire + vue liste, filtres et panneau détail.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   CalendarDays,
@@ -118,7 +118,7 @@ function RowActions({ onEdit, onDelete, className = '' }) {
           onEdit()
         }}
         aria-label="Modifier"
-        className="rounded-lg p-1.5 text-muted transition-colors hover:bg-elevated hover:text-content"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:bg-elevated hover:text-content sm:h-auto sm:w-auto sm:bg-transparent sm:p-1.5"
       >
         <Pencil size={14} />
       </button>
@@ -129,7 +129,7 @@ function RowActions({ onEdit, onDelete, className = '' }) {
           onDelete()
         }}
         aria-label="Supprimer"
-        className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-500/15 hover:text-red-500"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:bg-red-500/15 hover:text-red-500 sm:h-auto sm:w-auto sm:bg-transparent sm:p-1.5"
       >
         <Trash2 size={14} />
       </button>
@@ -301,7 +301,7 @@ function DetailModal({ cls, onClose, onEdit, onDelete }) {
       onClick={onClose}
     >
       <motion.div
-        className="w-full max-w-lg overflow-hidden rounded-t-3xl bg-card shadow-soft sm:rounded-3xl"
+        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-card shadow-soft sm:max-h-[90vh] sm:rounded-3xl"
         initial={{ y: 40, opacity: 0, scale: 0.98 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 40, opacity: 0, scale: 0.98 }}
@@ -309,20 +309,20 @@ function DetailModal({ cls, onClose, onEdit, onDelete }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête coloré */}
-        <div className={`relative ${a.header} px-6 pb-6 pt-5`}>
+        <div className={`relative shrink-0 ${a.header} px-4 pb-5 pt-5 sm:px-6 sm:pb-6`}>
           <button
             type="button"
             onClick={onClose}
-            className={`absolute right-4 top-4 rounded-full bg-black/10 p-1.5 ${a.headerText} transition-colors hover:bg-black/20`}
+            className={`absolute right-3 top-3 rounded-full bg-black/10 p-1.5 sm:right-4 sm:top-4 ${a.headerText} transition-colors hover:bg-black/20`}
           >
             <X size={16} />
           </button>
-          <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wide ${a.headerText} opacity-80`}>
+          <div className={`flex items-center gap-2 pr-8 text-xs font-bold uppercase tracking-wide ${a.headerText} opacity-80`}>
             <Dumbbell size={14} />
             {cls.category}
           </div>
-          <h2 className={`mt-1 text-2xl font-extrabold ${a.headerText}`}>{cls.title}</h2>
-          <div className={`mt-1 flex items-center gap-3 text-sm font-semibold ${a.headerText} opacity-90`}>
+          <h2 className={`mt-1 pr-8 text-xl font-extrabold sm:text-2xl ${a.headerText}`}>{cls.title}</h2>
+          <div className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold ${a.headerText} opacity-90`}>
             <span className="inline-flex items-center gap-1">
               <CalendarDays size={14} />
               {cls.day}
@@ -334,7 +334,7 @@ function DetailModal({ cls, onClose, onEdit, onDelete }) {
           </div>
         </div>
 
-        <div className="space-y-5 p-6">
+        <div className="space-y-5 overflow-y-auto p-4 sm:p-6">
           {/* Coach */}
           <div className="flex items-center gap-3">
             <Avatar src={coach?.avatar} name={cls.coach} size="lg" accent={a.avatar} />
@@ -420,7 +420,7 @@ function Chip({ active, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
         active
           ? 'bg-brand-yellow text-black'
           : 'bg-surface text-muted ring-1 ring-hairline hover:text-content'
@@ -428,6 +428,39 @@ function Chip({ active, onClick, children }) {
     >
       {children}
     </button>
+  )
+}
+
+// ---------- Sélecteur de jour (mobile) ----------
+function MobileDayPills({ days, byDay, selected, onSelect }) {
+  return (
+    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
+      {days.map((d) => {
+        const count = byDay[d].length
+        const active = selected === d
+        return (
+          <button
+            key={d}
+            type="button"
+            onClick={() => onSelect(d)}
+            className={`flex shrink-0 flex-col items-center gap-0.5 rounded-2xl px-4 py-2 transition-colors ${
+              active
+                ? 'bg-brand-yellow text-black'
+                : 'bg-surface text-muted ring-1 ring-hairline'
+            }`}
+          >
+            <span className="text-sm font-bold">{d}</span>
+            <span
+              className={`text-[10px] font-semibold ${
+                active ? 'text-black/70' : 'text-muted'
+              }`}
+            >
+              {count === 0 ? 'Repos' : `${count} séance${count > 1 ? 's' : ''}`}
+            </span>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -439,6 +472,7 @@ export default function Classes() {
   const [level, setLevel] = useState(null)
   const [category, setCategory] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [mobileDay, setMobileDay] = useState(days[0])
 
   // null = fermé | { mode: 'add' } | { mode: 'edit', cls }
   const [formState, setFormState] = useState(null)
@@ -504,6 +538,13 @@ export default function Classes() {
 
   const hasResults = filtered.length > 0
   const activeFilters = Boolean(level || category)
+
+  // Garde le jour sélectionné (mobile) valide : retombe sur le 1er jour avec cours.
+  useEffect(() => {
+    if (byDay[mobileDay] && byDay[mobileDay].length > 0) return
+    const firstWithClasses = days.find((d) => byDay[d].length > 0)
+    if (firstWithClasses) setMobileDay(firstWithClasses)
+  }, [byDay, mobileDay])
 
   // Le cours affiché dans le détail, resynchronisé avec le store (édition en direct).
   const selectedLive = selected
@@ -580,31 +621,35 @@ export default function Classes() {
       {/* Filtres */}
       <Card className="mt-6 p-4">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-bold uppercase tracking-wide text-muted">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted sm:mr-1">
               Niveau
             </span>
-            <Chip active={!level} onClick={() => setLevel(null)}>
-              Tous
-            </Chip>
-            {levels.map((l) => (
-              <Chip key={l} active={level === l} onClick={() => setLevel(l)}>
-                {l}
+            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:px-0">
+              <Chip active={!level} onClick={() => setLevel(null)}>
+                Tous
               </Chip>
-            ))}
+              {levels.map((l) => (
+                <Chip key={l} active={level === l} onClick={() => setLevel(l)}>
+                  {l}
+                </Chip>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-bold uppercase tracking-wide text-muted">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted sm:mr-1">
               Catégorie
             </span>
-            <Chip active={!category} onClick={() => setCategory(null)}>
-              Toutes
-            </Chip>
-            {categories.map((c) => (
-              <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
-                {c}
+            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:px-0">
+              <Chip active={!category} onClick={() => setCategory(null)}>
+                Toutes
               </Chip>
-            ))}
+              {categories.map((c) => (
+                <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
+                  {c}
+                </Chip>
+              ))}
+            </div>
           </div>
         </div>
       </Card>
@@ -634,35 +679,65 @@ export default function Classes() {
         </Card>
       ) : view === 'planning' ? (
         // ----- Vue Planning -----
-        <div className="mt-6 -mx-1 overflow-x-auto pb-2">
-          <div className="grid min-w-[920px] grid-cols-7 gap-3 px-1">
-            {days.map((d) => (
-              <div key={d} className="flex flex-col">
-                <div className="mb-2 flex items-center justify-between rounded-xl bg-elevated px-3 py-2">
-                  <span className="text-sm font-bold text-content">{d}</span>
-                  <span className="text-[11px] font-semibold text-muted">
-                    {byDay[d].length}
-                  </span>
+        <div className="mt-6">
+          {/* Mobile : sélecteur de jour + cours du jour empilés */}
+          <div className="lg:hidden">
+            <MobileDayPills
+              days={days}
+              byDay={byDay}
+              selected={mobileDay}
+              onSelect={setMobileDay}
+            />
+            <div className="mt-3 flex flex-col gap-2.5">
+              {byDay[mobileDay] && byDay[mobileDay].length > 0 ? (
+                byDay[mobileDay].map((cls) => (
+                  <ClassCard
+                    key={cls.id}
+                    cls={cls}
+                    onClick={() => setSelected(cls)}
+                    onEdit={() => openEdit(cls)}
+                    onDelete={() => setToDelete(cls)}
+                  />
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed border-hairline px-4 py-10 text-center text-xs font-medium text-muted">
+                  Aucun cours ce jour — repos
                 </div>
-                <div className="flex flex-col gap-2.5">
-                  {byDay[d].length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-hairline px-3 py-6 text-center text-[11px] font-medium text-muted">
-                      Repos
-                    </div>
-                  ) : (
-                    byDay[d].map((cls) => (
-                      <ClassCard
-                        key={cls.id}
-                        cls={cls}
-                        onClick={() => setSelected(cls)}
-                        onEdit={() => openEdit(cls)}
-                        onDelete={() => setToDelete(cls)}
-                      />
-                    ))
-                  )}
+              )}
+            </div>
+          </div>
+
+          {/* Desktop : grille hebdomadaire 7 colonnes */}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-7 gap-3">
+              {days.map((d) => (
+                <div key={d} className="flex flex-col">
+                  <div className="mb-2 flex items-center justify-between rounded-xl bg-elevated px-3 py-2">
+                    <span className="text-sm font-bold text-content">{d}</span>
+                    <span className="text-[11px] font-semibold text-muted">
+                      {byDay[d].length}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    {byDay[d].length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-hairline px-3 py-6 text-center text-[11px] font-medium text-muted">
+                        Repos
+                      </div>
+                    ) : (
+                      byDay[d].map((cls) => (
+                        <ClassCard
+                          key={cls.id}
+                          cls={cls}
+                          onClick={() => setSelected(cls)}
+                          onEdit={() => openEdit(cls)}
+                          onDelete={() => setToDelete(cls)}
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       ) : (

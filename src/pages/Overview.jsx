@@ -1,5 +1,5 @@
 // Tableau de bord — vue d'ensemble analytique de la salle InnoGym.
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Users,
   Wallet,
@@ -80,6 +80,19 @@ const ACCENT_SOFT = {
 
 const PERIODS = ['7 jours', '30 jours', '12 mois']
 
+// Détecte les petits écrans (téléphones) pour adapter les graphiques.
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false,
+  )
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [breakpoint])
+  return isMobile
+}
+
 function ChartTooltip({ active, payload, label, bg, suffix = '' }) {
   if (!active || !payload?.length) return null
   return (
@@ -107,6 +120,7 @@ function ChartTooltip({ active, payload, label, bg, suffix = '' }) {
 
 export default function Overview() {
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
   const [period, setPeriod] = useState(PERIODS[2])
   const [periodOpen, setPeriodOpen] = useState(false)
 
@@ -123,10 +137,10 @@ export default function Overview() {
         title="Tableau de bord"
         subtitle="Vue d'ensemble de votre salle — 14 mai 2026"
       >
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <button
             onClick={() => setPeriodOpen((o) => !o)}
-            className="flex items-center gap-2 rounded-xl border border-hairline bg-card px-3.5 py-2 text-sm font-semibold text-content transition-colors hover:bg-elevated"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-hairline bg-card px-3.5 py-2 text-sm font-semibold text-content transition-colors hover:bg-elevated sm:w-auto sm:justify-start"
           >
             <CalendarDays size={16} className="text-brand-purple" />
             {period}
@@ -136,7 +150,7 @@ export default function Overview() {
             />
           </button>
           {periodOpen && (
-            <div className="absolute right-0 z-20 mt-2 w-40 overflow-hidden rounded-xl border border-hairline bg-elevated shadow-soft">
+            <div className="absolute right-0 z-20 mt-2 w-full overflow-hidden rounded-xl border border-hairline bg-elevated shadow-soft sm:w-40">
               {PERIODS.map((p) => (
                 <button
                   key={p}
@@ -157,7 +171,7 @@ export default function Overview() {
       </PageHeader>
 
       {/* KPI row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         {kpis.map((k, i) => (
           <StatCard
             key={k.id}
@@ -174,10 +188,10 @@ export default function Overview() {
       </div>
 
       {/* Main bento grid */}
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-3">
         {/* Fréquentation mensuelle — wide */}
-        <Card className="p-5 lg:col-span-2">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <Card className="p-4 sm:p-5 lg:col-span-2">
+          <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
             <div>
               <h2 className="text-base font-bold text-content">
                 Fréquentation mensuelle
@@ -186,7 +200,7 @@ export default function Overview() {
                 Visites et nouveaux membres sur 12 mois
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-semibold">
+            <div className="flex items-center gap-3 text-xs font-semibold sm:gap-4">
               <span className="flex items-center gap-1.5 text-muted">
                 <span className="h-2.5 w-2.5 rounded-full bg-brand-yellow" />
                 Visites
@@ -197,7 +211,7 @@ export default function Overview() {
               </span>
             </div>
           </div>
-          <div className="mt-4 h-72">
+          <div className="mt-4 h-60 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={visitsByMonth}
@@ -215,13 +229,16 @@ export default function Overview() {
                   stroke={axisColor}
                   tickLine={false}
                   axisLine={false}
-                  fontSize={12}
+                  fontSize={isMobile ? 10 : 12}
+                  interval={isMobile ? 1 : 0}
+                  tickMargin={6}
                 />
                 <YAxis
                   stroke={axisColor}
                   tickLine={false}
                   axisLine={false}
-                  fontSize={12}
+                  fontSize={isMobile ? 10 : 12}
+                  width={isMobile ? 32 : 40}
                 />
                 <Tooltip
                   cursor={{ stroke: gridColor }}
@@ -238,7 +255,7 @@ export default function Overview() {
                 <Bar
                   dataKey="newMembers"
                   name="nouveaux membres"
-                  barSize={14}
+                  barSize={isMobile ? 9 : 14}
                   radius={[4, 4, 0, 0]}
                   fill="#8E7CD9"
                 />
@@ -257,10 +274,10 @@ export default function Overview() {
         </Card>
 
         {/* Revenu par formule — donut */}
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           <h2 className="text-base font-bold text-content">Revenu par formule</h2>
           <p className="mt-0.5 text-sm text-muted">Répartition du chiffre d'affaires</p>
-          <div className="relative mt-2 h-44">
+          <div className="relative mt-2 h-48 sm:h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -269,8 +286,8 @@ export default function Overview() {
                   nameKey="plan"
                   cx="50%"
                   cy="50%"
-                  innerRadius={52}
-                  outerRadius={78}
+                  innerRadius="58%"
+                  outerRadius="86%"
                   paddingAngle={3}
                   stroke="none"
                 >
@@ -294,15 +311,18 @@ export default function Overview() {
           </div>
           <div className="mt-3 space-y-2">
             {revenueByPlan.map((p) => (
-              <div key={p.plan} className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-muted">
+              <div
+                key={p.plan}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
+                <span className="flex min-w-0 items-center gap-2 text-muted">
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ background: p.color }}
                   />
-                  {p.plan}
+                  <span className="truncate">{p.plan}</span>
                 </span>
-                <span className="font-semibold text-content">
+                <span className="shrink-0 font-semibold text-content">
                   {p.value.toLocaleString('fr-FR')} DZD
                 </span>
               </div>
@@ -312,12 +332,12 @@ export default function Overview() {
       </div>
 
       {/* Second bento row */}
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-3">
         {/* Affluence par créneau — bar */}
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           <h2 className="text-base font-bold text-content">Affluence par créneau</h2>
           <p className="mt-0.5 text-sm text-muted">Présence moyenne sur une journée type</p>
-          <div className="mt-4 h-56">
+          <div className="mt-4 h-52 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={trafficByHour}
@@ -329,13 +349,16 @@ export default function Overview() {
                   stroke={axisColor}
                   tickLine={false}
                   axisLine={false}
-                  fontSize={11}
+                  fontSize={isMobile ? 10 : 11}
+                  interval={isMobile ? 1 : 0}
+                  tickMargin={6}
                 />
                 <YAxis
                   stroke={axisColor}
                   tickLine={false}
                   axisLine={false}
-                  fontSize={11}
+                  fontSize={isMobile ? 10 : 11}
+                  width={isMobile ? 30 : 40}
                 />
                 <Tooltip
                   cursor={{ fill: theme === 'dark' ? '#2a2a2a' : '#F2F2F4' }}
@@ -355,7 +378,7 @@ export default function Overview() {
         </Card>
 
         {/* Répartition des cours — horizontal bars */}
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           <h2 className="text-base font-bold text-content">Répartition des cours</h2>
           <p className="mt-0.5 text-sm text-muted">Sessions par catégorie cette semaine</p>
           <div className="mt-4 space-y-3.5">
@@ -380,7 +403,7 @@ export default function Overview() {
         </Card>
 
         {/* Activité récente — feed */}
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-content">Activité récente</h2>
             <Badge variant="purple">Live</Badge>
@@ -414,7 +437,7 @@ export default function Overview() {
       </div>
 
       {/* Objectifs du mois — full width */}
-      <Card className="mt-4 p-5">
+      <Card className="mt-3 p-4 sm:mt-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-content">Objectifs du mois</h2>
@@ -427,7 +450,7 @@ export default function Overview() {
             En bonne voie
           </span>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {monthlyGoals.map((g) => {
             const pct = Math.min(100, Math.round((g.current / g.target) * 100))
             return (
