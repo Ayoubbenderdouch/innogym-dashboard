@@ -68,7 +68,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="flex items-center gap-2.5">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1A1A1A] p-1.5">
               <img
-                src="/innogym-logo.png"
+                src={`${import.meta.env.BASE_URL}innogym-logo.png`}
                 alt="InnoGym"
                 className="h-full w-full object-contain"
               />
