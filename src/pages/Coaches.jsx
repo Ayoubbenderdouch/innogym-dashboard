@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Star,
   Users,
-  UserPlus,
   Clock,
   CalendarClock,
   Award,
@@ -12,13 +11,19 @@ import {
   X,
   Sparkles,
   ChevronRight,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
 import Badge, { STATUS_VARIANT } from '../components/ui/Badge'
 import Avatar from '../components/ui/Avatar'
-import { coaches } from '../data/coaches'
-import { gymClasses } from '../data/classes'
+import Modal from '../components/ui/Modal'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+import CoachForm from '../components/coaches/CoachForm'
+import { useData } from '../store/DataContext'
+import { useToast } from '../store/ToastContext'
 
 const ACCENT = {
   yellow: {
@@ -95,7 +100,7 @@ function StatChip({ icon: Icon, value, label }) {
 }
 
 /* ---- Carte coach ---- */
-function CoachCard({ coach, onOpen }) {
+function CoachCard({ coach, onOpen, onEdit, onDelete }) {
   const a = ACCENT[coach.accent] || ACCENT.yellow
   return (
     <Card
@@ -105,6 +110,49 @@ function CoachCard({ coach, onOpen }) {
     >
       <span className={`absolute inset-x-0 top-0 h-1 ${a.topBar}`} />
       <div className={`absolute inset-0 bg-gradient-to-br ${a.gradient} opacity-0 transition-opacity group-hover:opacity-100`} />
+
+      {/* Actions rapides — édition / suppression */}
+      <div className="absolute right-3 top-3 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="Modifier le coach"
+          onClick={(e) => {
+            e.stopPropagation()
+            onEdit(coach)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              e.stopPropagation()
+              onEdit(coach)
+            }
+          }}
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:text-content"
+        >
+          <Pencil size={13} />
+        </span>
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="Supprimer le coach"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(coach)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete(coach)
+            }
+          }}
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-elevated text-muted transition-colors hover:text-red-500"
+        >
+          <Trash2 size={13} />
+        </span>
+      </div>
+
       <div className="relative p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -151,10 +199,10 @@ function CoachCard({ coach, onOpen }) {
 }
 
 /* ---- Tiroir détail ---- */
-function CoachDrawer({ coach, onClose }) {
+function CoachDrawer({ coach, classes, onClose, onEdit, onDelete }) {
   if (!coach) return null
   const a = ACCENT[coach.accent] || ACCENT.yellow
-  const sessions = gymClasses.filter((c) => c.coachId === coach.id)
+  const sessions = classes.filter((c) => c.coachId === coach.id)
 
   return (
     <motion.div
@@ -303,6 +351,24 @@ function CoachDrawer({ coach, onClose }) {
               )}
             </div>
           </section>
+
+          {/* Actions */}
+          <section className="flex gap-2 border-t border-hairline pt-5">
+            <button
+              onClick={() => onEdit(coach)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-yellow px-4 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
+            >
+              <Pencil size={15} />
+              Modifier
+            </button>
+            <button
+              onClick={() => onDelete(coach)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-hairline bg-card px-4 py-2.5 text-sm font-bold text-red-500 transition-colors hover:bg-red-500/10"
+            >
+              <Trash2 size={15} />
+              Supprimer
+            </button>
+          </section>
         </div>
       </motion.div>
     </motion.div>
@@ -310,27 +376,53 @@ function CoachDrawer({ coach, onClose }) {
 }
 
 export default function Coaches() {
+  const { coaches, classes, deleteCoach } = useData()
+  const toast = useToast()
   const [sort, setSort] = useState('rating')
   const [selected, setSelected] = useState(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState(null) // coach en cours d'édition (null = ajout)
+  const [toDelete, setToDelete] = useState(null)
 
   const stats = useMemo(() => {
+    const count = coaches.length || 1
     const actifs = coaches.filter((c) => c.status === 'actif').length
-    const avg = coaches.reduce((s, c) => s + c.rating, 0) / coaches.length
-    const members = coaches.reduce((s, c) => s + c.members, 0)
-    const hours = coaches.reduce((s, c) => s + c.weeklyHours, 0)
+    const avg = coaches.reduce((s, c) => s + (c.rating || 0), 0) / count
+    const members = coaches.reduce((s, c) => s + (c.members || 0), 0)
+    const hours = coaches.reduce((s, c) => s + (c.weeklyHours || 0), 0)
     return { actifs, avg, members, hours }
-  }, [])
+  }, [coaches])
 
   const sorted = useMemo(
-    () => [...coaches].sort((a, b) => b[sort] - a[sort]),
-    [sort],
+    () => [...coaches].sort((a, b) => (b[sort] || 0) - (a[sort] || 0)),
+    [coaches, sort],
   )
 
   const featured = useMemo(
-    () => [...coaches].sort((a, b) => b.rating - a.rating)[0],
-    [],
+    () => [...coaches].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0],
+    [coaches],
   )
-  const fa = ACCENT[featured.accent] || ACCENT.yellow
+  const fa = ACCENT[featured?.accent] || ACCENT.yellow
+
+  const openAdd = () => {
+    setEditing(null)
+    setFormOpen(true)
+  }
+  const openEdit = (coach) => {
+    setSelected(null)
+    setEditing(coach)
+    setFormOpen(true)
+  }
+  const askDelete = (coach) => {
+    setSelected(null)
+    setToDelete(coach)
+  }
+  const confirmDelete = () => {
+    if (toDelete) {
+      deleteCoach(toDelete.id)
+      toast('Coach supprimé', 'success')
+    }
+  }
 
   const metricCards = [
     { icon: Activity, label: 'Coachs actifs', value: `${stats.actifs}/${coaches.length}`, accent: 'lime' },
@@ -360,6 +452,13 @@ export default function Coaches() {
             </button>
           ))}
         </div>
+        <button
+          onClick={openAdd}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-bold text-black transition-transform hover:scale-[1.03]"
+        >
+          <Plus size={16} strokeWidth={2.6} />
+          Nouveau coach
+        </button>
       </PageHeader>
 
       {/* Ligne de KPI */}
@@ -379,6 +478,7 @@ export default function Coaches() {
       </div>
 
       {/* Coach mis en avant */}
+      {featured && (
       <Card className={`relative mt-6 overflow-hidden ${fa.border}`}>
         <div className={`absolute inset-0 bg-gradient-to-br ${fa.gradient}`} />
         <div className="relative flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
@@ -430,17 +530,70 @@ export default function Coaches() {
           </div>
         </div>
       </Card>
+      )}
 
       {/* Grille des coachs */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {sorted.map((coach) => (
-          <CoachCard key={coach.id} coach={coach} onOpen={setSelected} />
+          <CoachCard
+            key={coach.id}
+            coach={coach}
+            onOpen={setSelected}
+            onEdit={openEdit}
+            onDelete={askDelete}
+          />
         ))}
       </div>
 
+      {sorted.length === 0 && (
+        <Card className="mt-6 p-10 text-center">
+          <p className="text-sm text-muted">
+            Aucun coach pour le moment. Ajoutez votre premier coach.
+          </p>
+        </Card>
+      )}
+
       <AnimatePresence>
-        {selected && <CoachDrawer coach={selected} onClose={() => setSelected(null)} />}
+        {selected && (
+          <CoachDrawer
+            coach={selected}
+            classes={classes}
+            onClose={() => setSelected(null)}
+            onEdit={openEdit}
+            onDelete={askDelete}
+          />
+        )}
       </AnimatePresence>
+
+      <Modal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editing ? 'Modifier le coach' : 'Nouveau coach'}
+        subtitle={
+          editing
+            ? 'Mettez à jour les informations du coach.'
+            : 'Renseignez les informations du nouveau coach.'
+        }
+        size="lg"
+      >
+        <CoachForm
+          coach={editing}
+          onClose={() => setFormOpen(false)}
+        />
+      </Modal>
+
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        onClose={() => setToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Supprimer le coach"
+        message={
+          toDelete
+            ? `Voulez-vous vraiment supprimer ${toDelete.fullName} ? Cette action est irréversible.`
+            : ''
+        }
+        confirmLabel="Supprimer"
+      />
     </div>
   )
 }

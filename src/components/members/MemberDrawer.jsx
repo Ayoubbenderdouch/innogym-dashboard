@@ -9,6 +9,7 @@ import {
   Sparkles,
   UserCog,
   Mail,
+  Trash2,
 } from 'lucide-react'
 import Avatar from '../ui/Avatar'
 import Badge, { STATUS_VARIANT } from '../ui/Badge'
@@ -78,7 +79,7 @@ function InfoRow({ icon: Icon, label, value }) {
   )
 }
 
-export default function MemberDrawer({ member, onClose }) {
+export default function MemberDrawer({ member, onClose, onEdit, onDelete }) {
   return (
     <AnimatePresence>
       {member && (
@@ -163,13 +164,23 @@ export default function MemberDrawer({ member, onClose }) {
                 <InfoRow icon={Clock} label="Statut" value={member.status} />
               </div>
 
-              {/* Actions visuelles */}
+              {/* Actions */}
               <div className="flex gap-3 pb-2">
-                <button className="flex-1 rounded-xl bg-brand-yellow py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90">
+                <button
+                  onClick={() => {
+                    onEdit?.(member)
+                    onClose()
+                  }}
+                  className="flex-1 rounded-xl bg-brand-yellow py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
+                >
                   Modifier
                 </button>
-                <button className="flex-1 rounded-xl border border-hairline bg-card py-2.5 text-sm font-bold text-content transition-colors hover:bg-elevated">
-                  Message
+                <button
+                  onClick={() => onDelete?.(member)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-hairline bg-card py-2.5 text-sm font-bold text-red-500 transition-colors hover:bg-red-500/15"
+                >
+                  <Trash2 size={15} />
+                  Supprimer
                 </button>
               </div>
             </div>

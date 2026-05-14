@@ -9,14 +9,21 @@ import {
   Search,
   Plus,
   ChevronRight,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import StatCard from '../components/ui/StatCard'
 import Card from '../components/ui/Card'
 import Avatar from '../components/ui/Avatar'
 import Badge, { STATUS_VARIANT } from '../components/ui/Badge'
+import Modal from '../components/ui/Modal'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 import MemberDrawer from '../components/members/MemberDrawer'
-import { members, plans, memberStatuses } from '../data/members'
+import MemberForm from '../components/members/MemberForm'
+import { plans, memberStatuses } from '../data/members'
+import { useData } from '../store/DataContext'
+import { useToast } from '../store/ToastContext'
 
 const fmtDate = (iso) => {
   if (!iso) return '—'
@@ -47,10 +54,23 @@ function FilterChip({ active, onClick, children }) {
 }
 
 export default function Members() {
+  const { members, deleteMember } = useData()
+  const toast = useToast()
+
   const [search, setSearch] = useState('')
   const [planFilter, setPlanFilter] = useState('tous')
   const [statusFilter, setStatusFilter] = useState('tous')
   const [selected, setSelected] = useState(null)
+  // formState : null | { mode: 'add' } | { mode: 'edit', member }
+  const [formState, setFormState] = useState(null)
+  // confirmTarget : membre en attente de suppression
+  const [confirmTarget, setConfirmTarget] = useState(null)
+
+  const handleDelete = (member) => {
+    deleteMember(member.id)
+    toast('Membre supprimé', 'success')
+    if (selected?.id === member.id) setSelected(null)
+  }
 
   // KPIs dérivés de la liste.
   const stats = useMemo(() => {
@@ -59,9 +79,11 @@ export default function Members() {
     const bientot = members.filter((m) => m.status === 'expire bientôt').length
     const expires = members.filter((m) => m.status === 'expiré').length
     // Rétention : part des membres non expirés.
-    const retention = Math.round(((total - expires) / total) * 100)
+    const retention = total
+      ? Math.round(((total - expires) / total) * 100)
+      : 0
     return { total, actifs, bientot, retention }
-  }, [])
+  }, [members])
 
   // Liste filtrée par recherche + chips.
   const filtered = useMemo(() => {
@@ -75,7 +97,7 @@ export default function Members() {
       const matchStatus = statusFilter === 'tous' || m.status === statusFilter
       return matchSearch && matchPlan && matchStatus
     })
-  }, [search, planFilter, statusFilter])
+  }, [members, search, planFilter, statusFilter])
 
   return (
     <div className="animate-fade-up">
@@ -83,7 +105,10 @@ export default function Members() {
         title="Membres"
         subtitle={`${members.length} membres • gérez les abonnements et le suivi`}
       >
-        <button className="flex items-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90">
+        <button
+          onClick={() => setFormState({ mode: 'add' })}
+          className="flex items-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90"
+        >
           <Plus size={16} strokeWidth={2.6} />
           Nouveau membre
         </button>
@@ -231,13 +256,21 @@ export default function Members() {
 
           <div className="divide-y divide-hairline">
             {filtered.map((m, i) => (
-              <motion.button
+              <motion.div
                 key={m.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelected(m)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelected(m)
+                  }
+                }}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.025, 0.4) }}
-                className="grid w-full grid-cols-1 items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-elevated/60 lg:grid-cols-[2.2fr_1fr_1fr_0.8fr_1.4fr_1fr_auto]"
+                className="group grid w-full cursor-pointer grid-cols-1 items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-elevated/60 focus:outline-none focus-visible:bg-elevated/60 lg:grid-cols-[2.2fr_1fr_1fr_0.8fr_1.4fr_1fr_auto]"
               >
                 {/* Membre */}
                 <div className="flex items-center gap-3">
@@ -282,17 +315,78 @@ export default function Members() {
                 {/* Dernière visite */}
                 <div className="text-xs text-muted">{fmtDate(m.lastVisit)}</div>
 
-                {/* Chevron */}
-                <div className="hidden justify-end text-muted lg:flex">
-                  <ChevronRight size={16} />
+                {/* Actions + chevron */}
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setFormState({ mode: 'edit', member: m })
+                    }}
+                    aria-label={`Modifier ${m.name}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-card hover:text-content lg:opacity-0 lg:group-hover:opacity-100"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setConfirmTarget(m)
+                    }}
+                    aria-label={`Supprimer ${m.name}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-red-500/15 hover:text-red-500 lg:opacity-0 lg:group-hover:opacity-100"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                  <div className="hidden text-muted lg:flex">
+                    <ChevronRight size={16} />
+                  </div>
                 </div>
-              </motion.button>
+              </motion.div>
             ))}
           </div>
         </Card>
       )}
 
-      <MemberDrawer member={selected} onClose={() => setSelected(null)} />
+      <MemberDrawer
+        member={selected}
+        onClose={() => setSelected(null)}
+        onEdit={(m) => setFormState({ mode: 'edit', member: m })}
+        onDelete={(m) => setConfirmTarget(m)}
+      />
+
+      {/* Formulaire ajout / édition */}
+      <Modal
+        open={Boolean(formState)}
+        onClose={() => setFormState(null)}
+        title={formState?.mode === 'edit' ? 'Modifier le membre' : 'Nouveau membre'}
+        subtitle={
+          formState?.mode === 'edit'
+            ? 'Mettez à jour les informations du membre'
+            : 'Ajoutez un nouveau membre à votre salle'
+        }
+        size="lg"
+      >
+        {formState && (
+          <MemberForm
+            member={formState.mode === 'edit' ? formState.member : undefined}
+            onClose={() => setFormState(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Confirmation de suppression */}
+      <ConfirmDialog
+        open={Boolean(confirmTarget)}
+        onClose={() => setConfirmTarget(null)}
+        onConfirm={() => handleDelete(confirmTarget)}
+        title="Supprimer le membre"
+        message={
+          confirmTarget
+            ? `Voulez-vous vraiment supprimer ${confirmTarget.name} ? Cette action est irréversible.`
+            : ''
+        }
+        confirmLabel="Supprimer"
+      />
     </div>
   )
 }

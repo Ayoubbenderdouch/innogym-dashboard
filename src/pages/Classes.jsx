@@ -14,14 +14,22 @@ import {
   List,
   Dumbbell,
   ChevronRight,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import StatCard from '../components/ui/StatCard'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import Avatar from '../components/ui/Avatar'
-import { gymClasses, days, levels } from '../data/classes'
+import Modal from '../components/ui/Modal'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+import ClassForm from '../components/classes/ClassForm'
+import { days, levels } from '../data/classes'
 import { coaches } from '../data/coaches'
+import { useData } from '../store/DataContext'
+import { useToast } from '../store/ToastContext'
 
 const ACCENT = {
   yellow: {
@@ -99,8 +107,38 @@ function OccupancyBar({ cls, showLabel = true }) {
   )
 }
 
+// ---------- Boutons d'action (éditer / supprimer) ----------
+function RowActions({ onEdit, onDelete, className = '' }) {
+  return (
+    <div className={`flex items-center gap-1 ${className}`}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onEdit()
+        }}
+        aria-label="Modifier"
+        className="rounded-lg p-1.5 text-muted transition-colors hover:bg-elevated hover:text-content"
+      >
+        <Pencil size={14} />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete()
+        }}
+        aria-label="Supprimer"
+        className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-500/15 hover:text-red-500"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  )
+}
+
 // ---------- Carte compacte du planning ----------
-function ClassCard({ cls, onClick }) {
+function ClassCard({ cls, onClick, onEdit, onDelete }) {
   const a = ACCENT[cls.accent] || ACCENT.yellow
   const coach = coachById[cls.coachId]
   const full = cls.placesBooked >= cls.maxPlaces
@@ -115,7 +153,10 @@ function ClassCard({ cls, onClick }) {
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-bold leading-tight text-content">{cls.title}</p>
-        {full && <Badge variant="danger">Complet</Badge>}
+        <div className="flex shrink-0 items-center gap-1">
+          {full && <Badge variant="danger">Complet</Badge>}
+          <RowActions onEdit={onEdit} onDelete={onDelete} />
+        </div>
       </div>
 
       <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-muted">
@@ -155,7 +196,7 @@ function ClassCard({ cls, onClick }) {
 }
 
 // ---------- Ligne de la vue liste ----------
-function ClassRow({ cls, onClick }) {
+function ClassRow({ cls, onClick, onEdit, onDelete }) {
   const a = ACCENT[cls.accent] || ACCENT.yellow
   const coach = coachById[cls.coachId]
   const full = cls.placesBooked >= cls.maxPlaces
@@ -164,7 +205,7 @@ function ClassRow({ cls, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-xl border border-hairline border-l-4 ${a.border} bg-surface px-3 py-2.5 text-left transition-colors hover:bg-elevated md:grid-cols-[88px_1.4fr_1fr_1fr_1.1fr_auto] ${
+      className={`grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-hairline border-l-4 ${a.border} bg-surface px-3 py-2.5 text-left transition-colors hover:bg-elevated md:grid-cols-[88px_1.4fr_1fr_1fr_1.1fr_auto] ${
         full ? 'opacity-70' : ''
       }`}
     >
@@ -192,13 +233,16 @@ function ClassRow({ cls, onClick }) {
         <OccupancyBar cls={cls} />
       </div>
 
-      <div className="hidden items-center justify-end gap-2 md:flex">
-        {full ? (
-          <Badge variant="danger">Complet</Badge>
-        ) : (
-          <Badge variant={LEVEL_BADGE[cls.level]}>{cls.level}</Badge>
-        )}
-        <ChevronRight size={14} className="text-muted" />
+      <div className="flex items-center justify-end gap-2">
+        <div className="hidden md:flex">
+          {full ? (
+            <Badge variant="danger">Complet</Badge>
+          ) : (
+            <Badge variant={LEVEL_BADGE[cls.level]}>{cls.level}</Badge>
+          )}
+        </div>
+        <RowActions onEdit={onEdit} onDelete={onDelete} />
+        <ChevronRight size={14} className="hidden text-muted md:block" />
       </div>
     </button>
   )
@@ -242,7 +286,7 @@ function OccupancyRing({ cls }) {
 }
 
 // ---------- Panneau détail ----------
-function DetailModal({ cls, onClose }) {
+function DetailModal({ cls, onClose, onEdit, onDelete }) {
   const a = ACCENT[cls.accent] || ACCENT.yellow
   const coach = coachById[cls.coachId]
   const full = cls.placesBooked >= cls.maxPlaces
@@ -344,6 +388,26 @@ function DetailModal({ cls, onClose }) {
               </div>
             </div>
           </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 border-t border-hairline pt-4">
+            <button
+              type="button"
+              onClick={onDelete}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-hairline bg-card px-4 py-2 text-sm font-bold text-red-500 transition-colors hover:bg-red-500/10"
+            >
+              <Trash2 size={15} />
+              Supprimer
+            </button>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90"
+            >
+              <Pencil size={15} />
+              Modifier
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -368,25 +432,59 @@ function Chip({ active, onClick, children }) {
 }
 
 export default function Classes() {
+  const { classes: gymClasses, addClass, updateClass, deleteClass } = useData()
+  const toast = useToast()
+
   const [view, setView] = useState('planning') // planning | liste
   const [level, setLevel] = useState(null)
   const [category, setCategory] = useState(null)
   const [selected, setSelected] = useState(null)
 
+  // null = fermé | { mode: 'add' } | { mode: 'edit', cls }
+  const [formState, setFormState] = useState(null)
+  const [toDelete, setToDelete] = useState(null)
+
+  const openAdd = () => setFormState({ mode: 'add' })
+  const openEdit = (cls) => setFormState({ mode: 'edit', cls })
+  const closeForm = () => setFormState(null)
+
+  function handleSubmit(payload) {
+    if (formState?.mode === 'edit') {
+      updateClass(formState.cls.id, payload)
+      toast('Cours mis à jour', 'success')
+    } else {
+      addClass(payload)
+      toast('Cours ajouté', 'success')
+    }
+    closeForm()
+  }
+
+  function confirmDelete() {
+    if (!toDelete) return
+    deleteClass(toDelete.id)
+    toast('Cours supprimé', 'success')
+    if (selected?.id === toDelete.id) setSelected(null)
+    setToDelete(null)
+  }
+
   const categories = useMemo(
     () => [...new Set(gymClasses.map((c) => c.category))].sort(),
-    [],
+    [gymClasses],
   )
 
   const stats = useMemo(() => {
     const total = gymClasses.length
     const booked = gymClasses.reduce((s, c) => s + c.placesBooked, 0)
-    const avgFill = Math.round(
-      (gymClasses.reduce((s, c) => s + c.placesBooked / c.maxPlaces, 0) / total) * 100,
-    )
+    const avgFill = total
+      ? Math.round(
+          (gymClasses.reduce((s, c) => s + c.placesBooked / c.maxPlaces, 0) /
+            total) *
+            100,
+        )
+      : 0
     const fullCount = gymClasses.filter((c) => c.placesBooked >= c.maxPlaces).length
     return { total, booked, avgFill, fullCount }
-  }, [])
+  }, [gymClasses])
 
   const filtered = useMemo(
     () =>
@@ -394,7 +492,7 @@ export default function Classes() {
         (c) =>
           (!level || c.level === level) && (!category || c.category === category),
       ),
-    [level, category],
+    [gymClasses, level, category],
   )
 
   const byDay = useMemo(() => {
@@ -407,31 +505,46 @@ export default function Classes() {
   const hasResults = filtered.length > 0
   const activeFilters = Boolean(level || category)
 
+  // Le cours affiché dans le détail, resynchronisé avec le store (édition en direct).
+  const selectedLive = selected
+    ? gymClasses.find((c) => c.id === selected.id) || null
+    : null
+
   return (
     <div className="animate-fade-up">
       <PageHeader
         title="Cours & Planning"
-        subtitle="14 séances cette semaine • suivez le remplissage en temps réel"
+        subtitle={`${stats.total} séance${stats.total > 1 ? 's' : ''} cette semaine • suivez le remplissage en temps réel`}
       >
-        <div className="flex rounded-full bg-surface p-1 ring-1 ring-hairline">
-          {[
-            { id: 'planning', label: 'Planning', icon: LayoutGrid },
-            { id: 'liste', label: 'Liste', icon: List },
-          ].map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => setView(v.id)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                view === v.id
-                  ? 'bg-brand-yellow text-black'
-                  : 'text-muted hover:text-content'
-              }`}
-            >
-              <v.icon size={14} />
-              {v.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-full bg-surface p-1 ring-1 ring-hairline">
+            {[
+              { id: 'planning', label: 'Planning', icon: LayoutGrid },
+              { id: 'liste', label: 'Liste', icon: List },
+            ].map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => setView(v.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  view === v.id
+                    ? 'bg-brand-yellow text-black'
+                    : 'text-muted hover:text-content'
+                }`}
+              >
+                <v.icon size={14} />
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={openAdd}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-yellow px-3.5 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90"
+          >
+            <Plus size={16} />
+            Nouveau cours
+          </button>
         </div>
       </PageHeader>
 
@@ -542,6 +655,8 @@ export default function Classes() {
                         key={cls.id}
                         cls={cls}
                         onClick={() => setSelected(cls)}
+                        onEdit={() => openEdit(cls)}
+                        onDelete={() => setToDelete(cls)}
                       />
                     ))
                   )}
@@ -572,6 +687,8 @@ export default function Classes() {
                       key={cls.id}
                       cls={cls}
                       onClick={() => setSelected(cls)}
+                      onEdit={() => openEdit(cls)}
+                      onDelete={() => setToDelete(cls)}
                     />
                   ))}
                 </div>
@@ -582,10 +699,53 @@ export default function Classes() {
 
       {/* Modal détail */}
       <AnimatePresence>
-        {selected && (
-          <DetailModal cls={selected} onClose={() => setSelected(null)} />
+        {selectedLive && (
+          <DetailModal
+            cls={selectedLive}
+            onClose={() => setSelected(null)}
+            onEdit={() => {
+              openEdit(selectedLive)
+              setSelected(null)
+            }}
+            onDelete={() => setToDelete(selectedLive)}
+          />
         )}
       </AnimatePresence>
+
+      {/* Formulaire ajout / édition */}
+      <Modal
+        open={Boolean(formState)}
+        onClose={closeForm}
+        title={formState?.mode === 'edit' ? 'Modifier le cours' : 'Nouveau cours'}
+        subtitle={
+          formState?.mode === 'edit'
+            ? 'Mettez à jour les informations de la séance.'
+            : 'Ajoutez une séance au planning hebdomadaire.'
+        }
+        size="lg"
+      >
+        {formState && (
+          <ClassForm
+            gymClass={formState.mode === 'edit' ? formState.cls : undefined}
+            onSubmit={handleSubmit}
+            onClose={closeForm}
+          />
+        )}
+      </Modal>
+
+      {/* Confirmation de suppression */}
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        onClose={() => setToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Supprimer le cours"
+        message={
+          toDelete
+            ? `Voulez-vous vraiment supprimer « ${toDelete.title} » ? Cette action est irréversible.`
+            : ''
+        }
+        confirmLabel="Supprimer"
+      />
     </div>
   )
 }
