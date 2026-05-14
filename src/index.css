@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 247 247 248;
+    --surface: 255 255 255;
+    --card: 255 255 255;
+    --elevated: 243 243 245;
+    --border: 232 232 235;
+    --content: 26 26 26;
+    --muted: 122 122 130;
+  }
+
+  .dark {
+    --bg: 18 18 18;
+    --surface: 26 26 26;
+    --card: 34 34 34;
+    --elevated: 42 42 42;
+    --border: 48 48 50;
+    --content: 245 245 245;
+    --muted: 139 139 145;
+  }
+
+  * {
+    border-color: rgb(var(--border));
+  }
+
+  body {
+    @apply bg-bg text-content font-sans antialiased;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-hairline rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted;
+  }
+}
+
+@layer components {
+  .card-base {
+    @apply bg-card border border-hairline rounded-2xl;
+  }
+}
